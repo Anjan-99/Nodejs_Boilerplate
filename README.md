@@ -12,7 +12,7 @@ This boilerplate includes:
 - **Logging**: 
   - **Morgan**: HTTP request logger.
   - **Winston**: General-purpose logger with support for error levels and formatting.
-  - **Chalk**: Terminal string styling for color-coded log messages.
+  - **Colors**: Terminal string styling for color-coded log messages.
 - **JWT Authentication**: Secure access token generation and refresh token management with Redis cache.
 - **Swagger**: Integrated API documentation.
 
