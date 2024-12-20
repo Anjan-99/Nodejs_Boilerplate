@@ -14,7 +14,6 @@ This boilerplate includes:
   - **Winston**: General-purpose logger with support for error levels and formatting.
   - **Colors**: Terminal string styling for color-coded log messages.
 - **JWT Authentication**: Secure access token generation and refresh token management with Redis cache.
-- **Swagger**: Integrated API documentation.
 
 ## Project Structure
 ```
