@@ -13,9 +13,9 @@ const generateDeviceId = async () => {
 };
 
 module.exports = {
-  signAccessToken: (id) => {
+  signAccessToken: (id,role) => {
     return new Promise((resolve, reject) => {
-      const payload = {};
+      const payload = { role: role };
       const secret = process.env.ACCESS_TOKEN_SECRET;
       const options = {
         expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN,

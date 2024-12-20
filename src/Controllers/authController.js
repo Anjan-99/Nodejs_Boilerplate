@@ -24,9 +24,8 @@ const passwordHash = async (password) => {
 // POST /api/auth/register
 // Public
 const register = asyncErrorHandler(async (req, res, next) => {
-  const { email, password } = req.body;
+  const { email, password, role } = req.body;
   const result = Register_schema.validate({ email, password });
-
   if (result.error) {
     throw customError.validationError("Invalid email or password");
   }
@@ -38,14 +37,29 @@ const register = asyncErrorHandler(async (req, res, next) => {
   }
   // Hash the password
   const hashedPassword = await passwordHash(password);
-
+  var payload = {};
+  if (role === "admin") {
+    // Create a new user
+    payload = {
+      email,
+      password: hashedPassword,
+      Role: "admin",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+  } else {
+    // Create a new user
+    payload = {
+      email,
+      password: hashedPassword,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+  }
+  console.log(payload);
   // Create a new user
-  const newUser = new User({
-    email,
-    password: hashedPassword,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  });
+  const newUser = new User(payload);
+  console.log(newUser);
   const savedUser = await newUser.save();
   if (!savedUser) {
     throw new customError("User not saved", 500);
@@ -71,7 +85,6 @@ const login = asyncErrorHandler(async (req, res, next) => {
     Promise.resolve(Login_schema.validate({ email, password })),
     User.findOne({
       where: { email },
-      attributes: ["id", "password"], // Only select needed fields
     }),
   ]);
 
@@ -89,10 +102,11 @@ const login = asyncErrorHandler(async (req, res, next) => {
   }
 
   const id = user.id.toString();
+  const role = user.Role
 
   // Generate tokens in parallel
   const [accessToken, refreshToken] = await Promise.all([
-    signAccessToken(id),
+    signAccessToken(id,role),
     signRefreshToken(id),
   ]);
 
@@ -172,7 +186,7 @@ const refreshToken = asyncErrorHandler(async (req, res, next) => {
   // split the token and get the user id from - id as we are storing the token in redis like this [6-2b10HOtjcvbPhZBxnCte0RCuuBhLUZlWwxdoHhwx6h29S6Kj1o49q]
   const id = userId.split("-")[0];
   const user = await User.findByPk(id);
-  if (!user){
+  if (!user) {
     redisClient.del(userId, (err, val) => {
       if (err) {
         new customError("Internal Server Error", 500);
