@@ -3,6 +3,14 @@ require("dotenv").config();
 const redisClient = require("../init_redis");
 const customError = require("../customError");
 const logger = require("../logger");
+const bcrypt = require("bcrypt");
+
+const generateDeviceId = async () => {
+  const timestamp = Date.now().toString();
+  const salt = await bcrypt.genSalt(10);
+  const hash = await bcrypt.hash(timestamp, salt);
+  return hash.replace(/[^a-zA-Z0-9]/g, ""); // Clean the hash for use as ID
+};
 
 module.exports = {
   signAccessToken: (id) => {
@@ -45,37 +53,83 @@ module.exports = {
       next();
     });
   },
-  signRefreshToken: (id) => {
+  signRefreshToken: async (id) => {
+    const deviceId = await generateDeviceId();
     return new Promise((resolve, reject) => {
       const payload = {};
       const secret = process.env.REFRESH_TOKEN_SECRET;
-      const options = {
-        expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN,
-        issuer: process.env.REFRESH_TOKEN_ISSUER,
-        audience: id,
-      };
-      logger.info("userId", id);
-      jwt.sign(payload, secret, options, (err, token) => {
+      // if token already exists in redis, then update that with same key and new token
+      redisClient.get(id, (err, result) => {
         if (err) {
           reject(new customError("Internal Server Error", 500));
         }
-        redisClient.set(id, token, "EX", 365 * 24 * 60 * 60, (err, reply) => {
-          if (err) {
-            reject(new customError("Internal Server Error", 500));
-          } else {
-            resolve(token);
-          }
-        });
+        if (result) {
+          const options = {
+            expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN,
+            issuer: process.env.REFRESH_TOKEN_ISSUER,
+            audience: id,
+          };
+          jwt.sign(
+            payload,
+            process.env.REFRESH_TOKEN_SECRET,
+            options,
+            (err, token) => {
+              if (err) {
+                reject(new customError("Internal Server Error", 500));
+              }
+              redisClient.set(
+                id,
+                token,
+                "EX",
+                365 * 24 * 60 * 60,
+                (err, reply) => {
+                  if (err) {
+                    reject(new customError("Internal Server Error", 500));
+                  } else {
+                    return resolve(token);
+                  }
+                }
+              );
+            }
+          );
+        } else {
+          const options = {
+            expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN,
+            issuer: process.env.REFRESH_TOKEN_ISSUER,
+            audience: `${id}-${deviceId}`,
+          };
+          jwt.sign(payload, secret, options, (err, token) => {
+            if (err) {
+              reject(new customError("Internal Server Error", 500));
+            }
+            //check if the token is already in the redis
+            const Redis_key = `${id}-${deviceId}`;
+            redisClient.set(
+              Redis_key,
+              token,
+              "EX",
+              365 * 24 * 60 * 60,
+              (err, reply) => {
+                if (err) {
+                  reject(new customError("Internal Server Error", 500));
+                } else {
+                  resolve(token);
+                }
+              }
+            );
+          });
+        }
       });
     });
   },
-  verifyRefreshToken: (token) => {
+  verifyRefreshToken: async (token) => {
     return new Promise((resolve, reject) => {
       jwt.verify(token, process.env.REFRESH_TOKEN_SECRET, (err, payload) => {
         if (err) {
           logger.error(`Error occurred: ${err.message}`);
           reject(new customError("Unauthorized", 401));
         }
+        console.log("Payload: ", payload);
         const id = payload.aud;
         redisClient.get(id, (redisErr, result) => {
           if (redisErr) {

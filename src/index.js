@@ -8,7 +8,6 @@ const morganMiddleware = require("./middlewares/morganMiddleware.js");
 const main = require("./routes/main.js");
 const customError = require("./utils/customError.js");
 const globalErrorHandler = require("./utils/globalErrorhandler.js");
-const sequelize = require("sequelize");
 
 // Uncaught Exception Handling
 process.on("uncaughtException", (err) => {
