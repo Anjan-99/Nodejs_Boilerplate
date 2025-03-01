@@ -16,7 +16,7 @@ console.error = (...args) => logger.error(args.join(" "));
 
 // Uncaught Exception Handling
 process.on("uncaughtException", (err) => {
-  logger.error("UNCAUGHT EXCEPTION! 💥 Shutting down...");
+  logger.error("💀 UNCAUGHT EXCEPTION! 💥 Shutting down...");
   logger.error(err.name, err.message);
   process.exit(1);
 });
@@ -42,8 +42,8 @@ app.use(morganMiddleware);
 // Enable CORS
 const corsOptions = {
   origin: "*", // Your frontend URL
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
   optionsSuccessStatus: 200,
 };
