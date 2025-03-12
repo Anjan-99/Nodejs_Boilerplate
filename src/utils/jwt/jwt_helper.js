@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const customError = require("../customError");
-const {findAdmin} = require("../dbutils/admin");
+const { findAdmin } = require("../dbutils/admin");
 module.exports = {
   signAccessToken: (id, role) => {
     return new Promise((resolve, reject) => {
@@ -26,7 +26,7 @@ module.exports = {
     if (!req.headers.authorization) {
       return next(new customError("Unauthorized", 401));
     }
-    
+
     const authHeader = req.headers.authorization;
     const bearerToken = authHeader.split(" ");
     const token = bearerToken[1];
@@ -41,12 +41,11 @@ module.exports = {
           message = "Internal Server Error";
         }
         return next(
-          new customError(message, err.name === "TokenExpiredError" ? 403 : 401)
+          new customError(message, err.name === "TokenExpiredError" ? 401 : 403)
         );
       }
       // take id from audience
       let id = payload.aud;
-      await findAdmin({ adminId: id });
       req.payload = payload;
       next();
     });

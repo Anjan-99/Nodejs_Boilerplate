@@ -5,6 +5,7 @@ class CustomError extends Error {
     this.status = statusCode >= 400 && statusCode < 500 ? "fail" : "error";
     this.isOperational = true;
     this.errorType = errorType; // Categorizing errors
+    this.error = message;
     Error.captureStackTrace(this, this.constructor);
   }
 
